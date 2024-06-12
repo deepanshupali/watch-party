@@ -11,11 +11,15 @@ export async function POST(req: any) {
 
   try {
     const user = await Register.findOne({ email });
+
     if (!user || password != user.password) {
       return NextResponse.json({ message: "Invalid" }, { status: 400 });
     }
     const token = "thistoken";
-    return NextResponse.json({ message: token }, { status: 200 });
+    return NextResponse.json(
+      { message: token, user: user.username },
+      { status: 200 }
+    );
   } catch (err: any) {
     NextResponse.json(
       {

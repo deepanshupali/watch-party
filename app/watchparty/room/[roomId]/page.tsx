@@ -1,8 +1,10 @@
 "use client";
 
+import { useProfile } from "@/contexts/profileProvider";
 import { logout } from "@/hooks/signInUser";
-
-import React, { useContext, useEffect, useState } from "react";
+import { pusherClient } from "@/lib/pusher";
+import Pusher from "pusher-js";
+import React, { useEffect, useState } from "react";
 
 interface ChatMessageProps {
   user: string;
@@ -21,108 +23,93 @@ interface PageProps {
     roomId: string;
   };
 }
-const ChatMessage: React.FC<ChatMessageProps> = ({ user, message, time }) => {
+
+interface ChatProps {
+  messages: ChatMessageProps[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessageProps[]>>;
+  roomId: string;
+  profile: string;
+}
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ user, message }) => {
   return (
     <div className="mb-4">
       <div className="flex justify-between text-sm text-gray-400">
         <span className="font-bold">{user}</span>
-        <span>{time}</span>
       </div>
       <div className="mt-1">{message}</div>
     </div>
   );
 };
 
-const CommentInput: React.FC = () => {
+const Chat: React.FC<ChatProps> = ({
+  messages,
+  setMessages,
+  roomId,
+  profile,
+}) => {
+  const handleSendMessage = async (message: string) => {
+    const newMessage = {
+      roomId,
+      user: profile,
+      message,
+    };
+
+    try {
+      await fetch("/api/message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newMessage),
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
   const [comment, setComment] = useState("");
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle submit logic
+    handleSendMessage(comment);
     setComment("");
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex p-4 bg-gray-700">
-      <input
-        type="text"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Type comment"
-        className="flex-1 p-2 rounded bg-gray-800 border-none text-white"
-      />
-      <button type="submit" className="ml-2 p-2 bg-blue-500 rounded text-white">
-        Send
-      </button>
-    </form>
-  );
-};
-
-const Chat: React.FC = () => {
-  return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
-        <ChatMessage
-          user="Luis Adam"
-          message="Yeah that guy deserves no dates"
-          time="24:12"
-        />
-        <ChatMessage
-          user="Musni Dhaifina"
-          message="One thousand percent"
-          time="24:30"
-        />
-        <ChatMessage user="Antonius JPG" message="😂😂😂" time="28:11" />
-        <ChatMessage
-          user="Nobel Winardi"
-          message="She is giving off way too much 'I'm a cool Boy Energy'"
-          time="29:53"
-        />
-        <ChatMessage
-          user="Angela Yonara"
-          message="She's talking to a man vs her regular voice when alone makes me wanna slap her"
-          time="30:27"
-        />
+        {messages.map((msg, index) => (
+          <ChatMessage key={index} {...msg} />
+        ))}
       </div>
-      <CommentInput />
+      <form onSubmit={handleSubmit} className="flex p-4 bg-gray-700">
+        <input
+          type="text"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Type comment"
+          className="flex-1 p-2 rounded bg-gray-800 border-none text-white"
+        />
+        <button
+          type="submit"
+          className="ml-2 p-2 bg-blue-500 rounded text-white"
+        >
+          Send
+        </button>
+      </form>
     </div>
   );
 };
-
-const OnlineUsers: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]); // 1. Provide an initial state with an empty array
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("/api/getusers");
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data.users);
-        } else {
-          console.error("Failed to fetch users:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
+const OnlineUsers: React.FC<{ onlineUsers: string[] }> = ({ onlineUsers }) => {
   return (
     <div>
-      {users.map(
-        (
-          user,
-          i // 2. Move the key prop to the outermost wrapping element
-        ) => (
-          <div key={i} className="p-4 flex justify-between">
-            <div className="p-2 border-b border-gray-700">{user.username}</div>
-            <button>Invite</button>
-          </div>
-        )
-      )}
+      {onlineUsers.map((username, i) => (
+        <div key={i} className="p-4 flex justify-between">
+          <div className="p-2 border-b border-gray-700">{username}</div>
+          <button>Invite</button>
+        </div>
+      ))}
     </div>
   );
 };
@@ -130,7 +117,6 @@ const OnlineUsers: React.FC = () => {
 const VideoPlayer: React.FC = () => {
   return (
     <div className="relative w-full h-full">
-      {/* This is where you can integrate your actual video player */}
       <video
         src="your-video-source.mp4"
         controls
@@ -142,8 +128,50 @@ const VideoPlayer: React.FC = () => {
 
 const WatchParty = ({ params }: PageProps) => {
   const { roomId } = params;
-  console.log(roomId);
   const [showChat, setShowChat] = useState(true);
+  const [messages, setMessages] = useState<ChatMessageProps[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<any>([]);
+  const { profile } = useProfile();
+  useEffect(() => {
+    const storedUser = localStorage.getItem("username");
+    console.log(storedUser);
+    const channel = pusherClient.subscribe(`chat-${roomId}`);
+    const fetchOnlineUsers = async () => {
+      try {
+        const response = await fetch("/api/onlineusers", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ roomId, user: storedUser }), // Replace "current-user" with the actual username or user ID of the current user
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setOnlineUsers(data.users);
+        } else {
+          console.error("Failed to fetch online users:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching online users:", error);
+      }
+    };
+
+    fetchOnlineUsers();
+
+    channel.bind("online", (data: any) => {
+      console.log(data.onlineUsers);
+      setOnlineUsers(data.onlineUsers);
+    });
+
+    channel.bind("msg", (data: ChatMessageProps) => {
+      setMessages((prevMessages) => [...prevMessages, data]);
+    });
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
+  }, [roomId]);
 
   return (
     <div className="flex h-screen bg-gray-900">
@@ -172,7 +200,16 @@ const WatchParty = ({ params }: PageProps) => {
           >
             signout
           </button>
-          {showChat ? <Chat /> : <OnlineUsers />}
+          {showChat ? (
+            <Chat
+              messages={messages}
+              setMessages={setMessages}
+              roomId={roomId}
+              profile={profile}
+            />
+          ) : (
+            <OnlineUsers onlineUsers={onlineUsers} />
+          )}
         </div>
       </div>
     </div>

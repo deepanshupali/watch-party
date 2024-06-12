@@ -2,6 +2,7 @@
 import { signInUser } from "@/hooks/signInUser";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useProfile } from "@/contexts/profileProvider";
 
 interface LoginFormData {
   email: string;
@@ -10,6 +11,7 @@ interface LoginFormData {
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
+  const { setUser } = useProfile();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -44,6 +46,8 @@ const LoginForm: React.FC = () => {
           setInvalidError("Invalid email or password!");
           return;
         }
+        console.log(result.user);
+        setUser(result.user);
         setInvalidError("");
         router.push("/watchparty");
       } catch (error) {
