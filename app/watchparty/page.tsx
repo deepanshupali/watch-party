@@ -11,7 +11,7 @@ const JoinRoomPage: React.FC = () => {
     const res = await fetch("/api/rooms/create");
 
     const roomI: string = await res.text();
-
+    localStorage.setItem("admin", "true");
     router.push(`watchparty/room/${roomI}`);
   };
 

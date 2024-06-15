@@ -2,7 +2,7 @@ import { pusherServer } from "@/lib/pusher";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const { roomId, videoId, action } = await req.json();
+  const { roomId, videoId, action, time } = await req.json();
   console.log(roomId, videoId, action);
   try {
     if (action == "sendId") {
@@ -10,13 +10,16 @@ export async function POST(req: Request) {
         videoId,
       });
     } else if (action == "play") {
+      console.log(time);
       await pusherServer.trigger(`video-${roomId}`, "play", {
-        play: true,
+        time: time,
       });
     } else if (action == "pause") {
       await pusherServer.trigger(`video-${roomId}`, "pause", {
-        play: false,
+        time: time,
       });
+    } else if (action == "seek") {
+      await pusherServer.trigger(`video-${roomId}`, "seek", { time: time });
     }
 
     return NextResponse.json(

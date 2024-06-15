@@ -130,6 +130,7 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const { profile } = useProfile();
   const [videoId, setVideoId] = useState<string>("");
+  const [admin, setAdmin] = useState<boolean>(false);
 
   const [url, setUrl] = useState<string>("");
   const playerRef = useRef<any>(null);
@@ -137,6 +138,7 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
     playerRef.current = event.target;
   };
   const playVideo = () => {
+    console.log("played");
     if (playerRef.current) {
       playerRef.current.playVideo();
     }
@@ -146,11 +148,14 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       playerRef.current.pauseVideo();
     }
   };
+
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
-    console.log(storedUser);
+    const isAdmin = localStorage.getItem("admin") === "true";
     const channel = pusherClient.subscribe(`chat-${roomId}`);
     const video = pusherClient.subscribe(`video-${roomId}`);
+    setAdmin(isAdmin);
+
     const fetchOnlineUsers = async () => {
       try {
         const response = await fetch("/api/onlineusers", {
@@ -186,14 +191,22 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       console.log(data.videoId);
       setVideoId(data.videoId);
     });
-    video.bind("play", (data: { play: boolean }) => {
-      console.log(data.play);
+    video.bind("play", (data: { time: any }) => {
+      if (isAdmin) {
+        return;
+      }
+      console.log(data.time);
+      playerRef.current.seekTo(data.time);
       playVideo();
     });
-    video.bind("pause", (data: { pause: boolean }) => {
-      console.log(data.pause);
+    video.bind("pause", (data: { time: any }) => {
+      if (admin) {
+        return;
+      }
+      console.log(data.time);
       pauseVideo();
     });
+
     return () => {
       channel.unbind_all();
       channel.unsubscribe();
@@ -217,24 +230,34 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
     // if (id) setVideoId(id);
   };
   const handlePause = async () => {
+    console.log("pause");
     const id = extractVideoId(url);
-    await sendVideoId(id, "pause");
+    const currentTime = playerRef.current.getCurrentTime();
+    await sendVideoId(id, "pause", currentTime);
     // if (id) setVideoId(id);
   };
   const handlePlay = async () => {
+    console.log("play");
     const id = extractVideoId(url);
-    await sendVideoId(id, "play");
+    const currentTime = playerRef.current.getCurrentTime();
+    await sendVideoId(id, "play", currentTime);
     // if (id) setVideoId(id);
   };
+  const onPlayerStateChange = async () => {
+    const id = extractVideoId(url);
 
-  const sendVideoId = async (id: any, action: any) => {
+    const currentTime = playerRef.current.getCurrentTime();
+    await sendVideoId(id, "seek", currentTime);
+  };
+
+  const sendVideoId = async (id: any, action: any, time?: number) => {
     try {
       const response = await fetch("/api/videoaction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ roomId, videoId: id, action: action }), // Replace "current-user" with the actual username or user ID of the current user
+        body: JSON.stringify({ roomId, videoId: id, action: action, time }), // Replace "current-user" with the actual username or user ID of the current user
       });
 
       if (response.ok) {
@@ -268,8 +291,16 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
           <YouTube
             videoId={videoId}
             onReady={onPlayerReady}
-            onPlay={handlePlay} // defaults -> noop
-            onPause={handlePause}
+            onPlay={() => {
+              if (localStorage.getItem("admin") === "true") {
+                handlePlay();
+              }
+            }}
+            onPause={() => {
+              if (localStorage.getItem("admin") === "true") {
+                handlePause();
+              }
+            }}
           />
         )}
       </div>
