@@ -3,6 +3,7 @@ import { signInUser } from "@/hooks/signInUser";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/contexts/profileProvider";
+import Link from "next/link";
 
 interface LoginFormData {
   email: string;
@@ -46,7 +47,7 @@ const LoginForm: React.FC = () => {
           setInvalidError("Invalid email or password!");
           return;
         }
-        console.log(result.user);
+
         setUser(result.user);
         setInvalidError("");
         router.push("/watchparty");
@@ -57,10 +58,10 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-black text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
             Sign in to your account
           </h2>
         </div>
@@ -120,19 +121,10 @@ const LoginForm: React.FC = () => {
               />
               <label
                 htmlFor="remember_me"
-                className="ml-2 block text-sm text-gray-900"
+                className="ml-2 block text-sm text-white"
               >
                 Remember me
               </label>
-            </div>
-
-            <div className="text-sm">
-              <a
-                href="#"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Forgot your password?
-              </a>
             </div>
           </div>
           {invalidError && (
@@ -152,30 +144,17 @@ const LoginForm: React.FC = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Or continue with
-                </span>
+                <span className="px-2 bg-white text-gray-500">Or</span>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div>
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with Google</span>
-                  Google
-                </button>
-              </div>
-              <div>
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <span className="sr-only">Sign in with GitHub</span>
-                  GitHub
-                </button>
-              </div>
+
+            <div>
+              <Link
+                href={"/register"}
+                className="mt-5 group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-800 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Sign Up
+              </Link>
             </div>
           </div>
         </form>

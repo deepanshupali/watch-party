@@ -6,6 +6,8 @@ import { pusherClient } from "@/lib/pusher";
 import { IoIosLogOut } from "react-icons/io";
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import YouTube, { YouTubeProps } from "react-youtube";
+import { useRouter } from "next/navigation";
+import CopyButton from "@/components/CopyToClip";
 
 interface ChatMessageProps {
   user: string;
@@ -131,14 +133,19 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
   const { profile } = useProfile();
   const [videoId, setVideoId] = useState<string>("");
   const [admin, setAdmin] = useState<boolean>(false);
-
+  const router = useRouter();
   const [url, setUrl] = useState<string>("");
   const playerRef = useRef<any>(null);
+  const [user, setUser] = useState<string>("");
+  const opts = {
+    height: "500",
+    width: "1000",
+  };
+
   const onPlayerReady: YouTubeProps["onReady"] = (event) => {
     playerRef.current = event.target;
   };
   const playVideo = () => {
-    console.log("played");
     if (playerRef.current) {
       playerRef.current.playVideo();
     }
@@ -150,7 +157,7 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("username");
+    const storedUse = localStorage.getItem("username");
     const isAdmin = localStorage.getItem("admin") === "true";
     const channel = pusherClient.subscribe(`chat-${roomId}`);
     const video = pusherClient.subscribe(`video-${roomId}`);
@@ -163,11 +170,12 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ roomId, user: storedUser }), // Replace "current-user" with the actual username or user ID of the current user
+          body: JSON.stringify({ roomId, user: storedUse }), // Replace "current-user" with the actual username or user ID of the current user
         });
 
         if (response.ok) {
           const data = await response.json();
+
           setOnlineUsers(data.users);
         } else {
           console.error("Failed to fetch online users:", response.statusText);
@@ -179,8 +187,7 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
 
     fetchOnlineUsers();
 
-    channel.bind("online", (data: any) => {
-      console.log(data.onlineUsers);
+    channel.bind("online", (data: { onlineUsers: any }) => {
       setOnlineUsers(data.onlineUsers);
     });
 
@@ -188,14 +195,13 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       setMessages((prevMessages) => [...prevMessages, data]);
     });
     video.bind("videoId", (data: { videoId: string }) => {
-      console.log(data.videoId);
       setVideoId(data.videoId);
     });
     video.bind("play", (data: { time: any }) => {
       if (isAdmin) {
         return;
       }
-      console.log(data.time);
+
       playerRef.current.seekTo(data.time);
       playVideo();
     });
@@ -203,7 +209,7 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       if (admin) {
         return;
       }
-      console.log(data.time);
+
       pauseVideo();
     });
 
@@ -230,14 +236,12 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
     // if (id) setVideoId(id);
   };
   const handlePause = async () => {
-    console.log("pause");
     const id = extractVideoId(url);
     const currentTime = playerRef.current.getCurrentTime();
     await sendVideoId(id, "pause", currentTime);
     // if (id) setVideoId(id);
   };
   const handlePlay = async () => {
-    console.log("play");
     const id = extractVideoId(url);
     const currentTime = playerRef.current.getCurrentTime();
     await sendVideoId(id, "play", currentTime);
@@ -261,7 +265,6 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       });
 
       if (response.ok) {
-        console.log("everyone got video");
       } else {
         console.error("Failed to send video id:", response.statusText);
       }
@@ -269,9 +272,20 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
       console.error("Error sending video id:", error);
     }
   };
+  async function logoutMain() {
+    localStorage.removeItem("admin");
+    await logout();
+    router.push("/");
+  }
 
   return (
     <div className="flex h-screen bg-gray-900">
+      {/* <div>
+        <h1 className="absolute right-[500px] top-10">
+          Welcome {storedUser!.charAt(0).toUpperCase() + storedUser!.slice(1)}
+        </h1>
+      </div> */}
+
       <div className="flex flex-col flex-3 items-center justify-center gap-28 w-3/4">
         <div className="flex items-center mb-4 w-3/4 gap-3">
           <input
@@ -288,20 +302,26 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
           </button>
         </div>
         {videoId && (
-          <YouTube
-            videoId={videoId}
-            onReady={onPlayerReady}
-            onPlay={() => {
-              if (localStorage.getItem("admin") === "true") {
-                handlePlay();
-              }
-            }}
-            onPause={() => {
-              if (localStorage.getItem("admin") === "true") {
-                handlePause();
-              }
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <YouTube
+              opts={opts}
+              videoId={videoId}
+              onReady={onPlayerReady}
+              onPlay={() => {
+                if (localStorage.getItem("admin") === "true") {
+                  handlePlay();
+                }
+              }}
+              onPause={() => {
+                if (localStorage.getItem("admin") === "true") {
+                  handlePause();
+                }
+              }}
+              style={{
+                zIndex: localStorage.getItem("admin") === "true" ? 2 : 0,
+              }}
+            />
+          </div>
         )}
       </div>
       {/* Chat side starts */}
@@ -337,12 +357,12 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
           )}
         </div>
       </div>
-
       <IoIosLogOut
-        onClick={() => logout()}
+        onClick={() => logoutMain()}
         size={30}
         className="absolute right-[28%] top-9 text-white cursor-pointer hover:text-red-500"
       />
+      <CopyButton textToCopy={roomId} />
     </div>
   );
 };

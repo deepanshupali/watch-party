@@ -34,7 +34,7 @@ export async function signInUser(formData: FormData) {
   }
 }
 export const logout = async () => {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const hasCookie = cookieStore.has("token");
   if (hasCookie) {
     cookies().delete("token");
