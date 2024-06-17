@@ -37,11 +37,12 @@ const LoginForm: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log("off the submit");
     e.preventDefault();
     if (validate()) {
       try {
         const result = await signInUser(formData);
-
+        console.log("in the submit");
         if (result?.message == "Invalid") {
           setInvalidError("Invalid email or password!");
           return;

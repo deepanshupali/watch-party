@@ -17,6 +17,7 @@ export async function signInUser(formData: FormData) {
     });
     const cookieStore = cookies();
     const hasCookie = cookieStore.has("token");
+
     if (hasCookie) {
       cookies().delete("token");
     }
