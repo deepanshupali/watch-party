@@ -1,5 +1,4 @@
 "use client";
-
 import { useProfile } from "@/contexts/profileProvider";
 import { logout } from "@/hooks/signInUser";
 import { pusherClient } from "@/lib/pusher";

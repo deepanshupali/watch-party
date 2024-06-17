@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import copy from "copy-to-clipboard";
 
 interface CopyButtonProps {
   textToCopy: string;
@@ -8,7 +8,8 @@ interface CopyButtonProps {
 const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy }) => {
   const [isCopied, setIsCopied] = useState(false);
 
-  const onCopy = () => {
+  const handleCopy = () => {
+    copy(textToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000); // Timeout for copied message (2 seconds)
   };
@@ -26,14 +27,12 @@ const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy }) => {
         disabled
         readOnly
       />
-      <CopyToClipboard text={textToCopy} onCopy={onCopy}>
-        <button
-          data-copy-to-clipboard-target="npm-install"
-          className="col-span-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 items-center inline-flex justify-center"
-        >
-          <span id="default-message">{isCopied ? "Copied!" : "Copy Id"}</span>
-        </button>
-      </CopyToClipboard>
+      <button
+        onClick={handleCopy}
+        className="col-span-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 items-center inline-flex justify-center"
+      >
+        <span id="default-message">{isCopied ? "Copied!" : "Copy Id"}</span>
+      </button>
     </div>
   );
 };
