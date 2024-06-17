@@ -12,7 +12,6 @@ interface LoginFormData {
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
-  const { setUser } = useProfile();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -48,7 +47,6 @@ const LoginForm: React.FC = () => {
           return;
         }
 
-        setUser(result.user);
         setInvalidError("");
         router.push("/watchparty");
       } catch (error) {
