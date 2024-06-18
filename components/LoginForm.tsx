@@ -12,6 +12,7 @@ interface LoginFormData {
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
+  const { setUser } = useProfile();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -37,17 +38,17 @@ const LoginForm: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log("off the submit");
     e.preventDefault();
     if (validate()) {
       try {
         const result = await signInUser(formData);
-        console.log("in the submit");
+
         if (result?.message == "Invalid") {
           setInvalidError("Invalid email or password!");
           return;
         }
 
+        setUser(result.user);
         setInvalidError("");
         router.push("/watchparty");
       } catch (error) {

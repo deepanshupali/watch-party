@@ -279,11 +279,11 @@ const WatchParty: React.FC<PageProps> = ({ params }) => {
 
   return (
     <div className="flex h-screen bg-gray-900">
-      {/* <div>
+      <div>
         <h1 className="absolute right-[500px] top-10">
-          Welcome {storedUser!.charAt(0).toUpperCase() + storedUser!.slice(1)}
+          Welcome {profile!.charAt(0).toUpperCase() + profile!.slice(1)}
         </h1>
-      </div> */}
+      </div>
 
       <div className="flex flex-col flex-3 items-center justify-center gap-28 w-3/4">
         <div className="flex items-center mb-4 w-3/4 gap-3">
